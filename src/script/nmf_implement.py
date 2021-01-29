@@ -1,3 +1,13 @@
+import os, sys
+#print(os.path.realpath(__file__))
+#curdir = os.path.dirname(os.path.realpath(__file__))
+#sys.path.append(curdir + "/script")
+#sys.path.append(curdir + "/image")
+#sys.path.append(curdir + "/data")
+sys.path.append('/Users/thereseschachner/Desktop/muscle_synergy_torque_accuracy_w3/src/')
+sys.path.append('/Users/thereseschachner/Desktop/muscle_synergy_torque_accuracy_w3/src/script/')
+sys.path.append('/Users/thereseschachner/Desktop/muscle_synergy_torque_accuracy_w3/src/script/nmf_implement.py')
+
 import numpy as np
 import pandas as pd
 from random import randint
