@@ -23,7 +23,7 @@ def find_all_Hs(data):
         #all_participants = ['c02', 'c04', 'c05', 'c07', 'c08', 'c09', 'c10'] # omitted c06 for now
         #all_tasks = ['10%', '30%', '50%']
         # Use one participant and one task for now
-        all_participants = ['c02']
+        all_participants = ['c07']
         all_tasks = ['10%']
         for participant in all_participants:
             for task in all_tasks:
@@ -105,8 +105,11 @@ def scalar_prod_similarity_normal():
     H_ref_rand = np.zeros([1000,8])
     for emg_count in range(0, num_emgs):
         H_ref_rand[:,emg_count] = np.random.normal(H_refs_emg_means[emg_count], H_refs_emg_stdevs[emg_count], 1000)
+    H_ref_rand[np.where(H_ref_rand < 0)] = 0
+    H_ref_rand = normalize(H_ref_rand, norm='l1')
 
     H_matches_concat = np.concatenate(list(H_matches.values()))  # concatenate all H_refs into one matrix, then find their mean and stdev
+    print("rows in H_matches_concat: " + str(np.shape(H_matches_concat)[0]))
     H_matches_emg_means = np.mean(H_matches_concat, axis=0)
     H_matches_emg_stdevs = np.std(H_matches_concat, axis=0)
     H_matches_rand = np.zeros([1000, 8])
@@ -115,14 +118,13 @@ def scalar_prod_similarity_normal():
     fig, axs = plt.subplots(2, 4)
     for emg_count in range(0, num_emgs):
         H_matches_rand[:,emg_count] = np.random.normal(H_matches_emg_means[emg_count], H_matches_emg_stdevs[emg_count], 1000)
-        if emg_count == 0:
-            axs[0,0].hist(H_matches_rand[:, emg_count], list(np.array(np.arange(0,1,0.01))))
-            title_str = 'μ≈' + str(round(H_matches_emg_means[emg_count], 2)) + ', σ≈' + str(round(H_matches_emg_stdevs[emg_count], 2))
-            axs[0,0].set_title(title_str)
-        else:
-            axs[int(emg_count/4), emg_count % 4].hist(H_matches_rand[:, emg_count], list(np.array(np.arange(0,1,0.01))))
-            title_str = 'μ≈' + str(round(H_matches_emg_means[emg_count], 2)) + ', σ≈' + str(round(H_matches_emg_stdevs[emg_count], 2))
-            axs[int(emg_count/4), emg_count % 4].set_title(title_str)
+    H_matches_rand[np.where(H_matches_rand < 0)] = 0
+    H_matches_rand = normalize(H_matches_rand, norm='l1')
+    # Create plot
+    for emg_count in range(0, num_emgs):
+        axs[int(emg_count/4), emg_count % 4].hist(H_matches_rand[:, emg_count], list(np.array(np.arange(0,1,0.01))))
+        title_str = 'μ≈' + str(round(H_matches_emg_means[emg_count], 2)) + ', σ≈' + str(round(H_matches_emg_stdevs[emg_count], 2))
+        axs[int(emg_count/4), emg_count % 4].set_title(title_str)
     # Plot the histogram of the random values
     plt.savefig('H_matches_rand histogram (normal distrib)')
     plt.show()
@@ -174,8 +176,11 @@ def scalar_prod_similarity_truncnorm():
         H_ref_rand[:,emg_count] = truncnorm.rvs((H_refs_emg_mins[emg_count] - H_refs_emg_means[emg_count]) / H_refs_emg_stdevs[emg_count],
                                                 (H_refs_emg_maxes[emg_count] - H_refs_emg_means[emg_count]) / H_refs_emg_stdevs[emg_count],
                                                 loc=H_refs_emg_means[emg_count], scale=H_refs_emg_stdevs[emg_count], size=1000)
+    H_ref_rand[np.where(H_ref_rand < 0)] = 0
+    H_ref_rand = normalize(H_ref_rand, norm='l1')
 
     H_matches_concat = np.concatenate(list(H_matches.values()))  # concatenate all H_refs into one matrix, then find their mean and stdev
+    print("rows in H_matches_concat: " + str(np.shape(H_matches_concat)[0]))
     H_matches_emg_means = np.mean(H_matches_concat, axis=0)
     H_matches_emg_stdevs = np.std(H_matches_concat, axis=0)
     H_matches_emg_mins = np.min(H_matches_concat, axis=0)
@@ -190,11 +195,10 @@ def scalar_prod_similarity_truncnorm():
             (H_matches_emg_mins[emg_count] - H_matches_emg_means[emg_count]) / H_matches_emg_stdevs[emg_count],
             (H_matches_emg_maxes[emg_count] - H_matches_emg_means[emg_count]) / H_matches_emg_stdevs[emg_count],
             loc=H_matches_emg_means[emg_count], scale=H_matches_emg_stdevs[emg_count], size=1000)
-        if emg_count == 0:
-            axs[0,0].hist(H_matches_rand[:, emg_count], list(np.array(np.arange(0,1,0.01))))
-            title_str = 'μ≈' + str(round(H_matches_emg_means[emg_count], 2)) + ', σ≈' + str(round(H_matches_emg_stdevs[emg_count], 2))
-            axs[0,0].set_title(title_str)
-        else:
+    H_matches_rand[np.where(H_matches_rand < 0)] = 0
+    H_matches_rand = normalize(H_matches_rand, norm='l1')
+
+    for emg_count in range(0, num_emgs):
             axs[int(emg_count/4), emg_count % 4].hist(H_matches_rand[:, emg_count], list(np.array(np.arange(0,1,0.01))))
             title_str = 'μ≈' + str(round(H_matches_emg_means[emg_count], 2)) + ', σ≈' + str(round(H_matches_emg_stdevs[emg_count], 2))
             axs[int(emg_count/4), emg_count % 4].set_title(title_str)
@@ -235,6 +239,8 @@ def scalar_prod_similarity_uniform():
 
     # Find Hs for all the datasets
     H_refs, H_matches = find_all_Hs(datasets)
+    print("H_refs: " + str(H_refs))
+    print("H_matches: " + str(H_matches))
 
     # Generate the random matrices, using a uniform distribution with points ranging from mean-stdev to mean+stdev
     num_emgs = 8
@@ -251,6 +257,7 @@ def scalar_prod_similarity_uniform():
     H_ref_rand = normalize(H_ref_rand, norm='l1')
 
     H_matches_concat = np.concatenate(list(H_matches.values()))  # concatenate all H_refs into one matrix, then find their mean and stdev
+    print("rows in H_matches_concat: " + str(np.shape(H_matches_concat)[0]))
     H_matches_emg_means = np.mean(H_matches_concat, axis=0)
     H_matches_emg_stdevs = np.std(H_matches_concat, axis=0)
     H_matches_emg_mins = np.min(H_matches_concat, axis=0)
@@ -305,5 +312,5 @@ def scalar_prod_similarity_uniform():
 
 if __name__ == "__main__":
     #scalar_prod_similarity_normal()
-    #scalar_prod_similarity_truncnorm()
-    scalar_prod_similarity_uniform()
+    scalar_prod_similarity_truncnorm()
+    #scalar_prod_similarity_uniform()
