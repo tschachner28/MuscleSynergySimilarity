@@ -56,7 +56,8 @@ def rank_determine_helper(repeat_num, A, rank):
 
 if __name__ == "__main__":
     match_df = pd.read_csv('../data/referenceData_121120.csv')
-    load_data = match_df.loc[(match_df['Task'] == '50%') & (match_df['Su'] != 'c06')]
+    #load_data = match_df.loc[(match_df['Task'] == '50%') & (match_df['Su'] != 'c06')]
+    load_data = match_df.loc[(match_df['Task'] == '10%') & (match_df['Su'] == 'c02')]
     load_emg = load_data.loc[:, 'Bicep':'MidTrap'].values
 
     curr_mean = 0
