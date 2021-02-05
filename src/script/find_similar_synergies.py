@@ -22,14 +22,14 @@ def find_all_Hs(data):
         match_df = pd.read_csv(mat)
         #all_participants = ['c02', 'c04', 'c05', 'c07', 'c08', 'c09', 'c10'] # omitted c06 for now
         #all_tasks = ['10%', '30%', '50%']
-        # Use one participant and one task for now
+        # Group by task
         all_participants = ['c02']
-        all_tasks = ['50%']
+        all_tasks = ['30%']
         for participant in all_participants:
             for task in all_tasks:
                 load_data = match_df.loc[(match_df['Task'] == task) & (match_df['Su'] != 'c06')]
                 load_emg = load_data.loc[:, 'Bicep':'MidTrap'].values
-                """
+
                 curr_mean = 0
                 VAF_best = 0
                 H_best = 0
@@ -45,7 +45,7 @@ def find_all_Hs(data):
                     Hs_all_ranks.append(H_m)
                     if np.any(l_mean < 80) or g_mean < 90:
                         continue
-                    elif g_mean - curr_mean < 3:
+                    elif g_mean - curr_mean >= 3:
                         curr_mean = g_mean
                         VAF_best = VAF_m
                         H_best = H_m
@@ -53,6 +53,7 @@ def find_all_Hs(data):
                         rank_chosen = rank
                     else:
                         continue
+
                 # If none of the ranks have g_mean > 90 and np.all(l_mean) > 80)
                 if type(H_best) == int: # still same as its initialized value --> no optimal H has been found yet
                     print("entered second round selection")
@@ -66,25 +67,7 @@ def find_all_Hs(data):
                         H_best = []
                         print("No H satisfies the criteria.")
                         continue
-                """
 
-                curr_mean = 0
-                VAF_best = 0
-                H_best = 0
-                W_best = 0
-                rank_chosen = 0
-                for rank in range(2, 5):
-                    g_mean, l_mean, VAF_m, H_m, W_m = rank_determine_helper(100, load_emg, rank)
-                    if np.any(l_mean < 80):
-                        continue
-                    elif g_mean - curr_mean >= 3:
-                        curr_mean = g_mean
-                        VAF_best = VAF_m
-                        H_best = H_m
-                        W_best = W_m
-                        rank_chosen = rank
-                    else:
-                        continue
 
                 print('best number of synergy chosen is: ', rank_chosen)
                 print('H_best is:\n', H_best)
@@ -114,12 +97,8 @@ def find_all_Hs(data):
         axs[int(emg_count/4), emg_count % 4].set_title(title_str)
         axs[int(emg_count / 4), emg_count % 4].set_xlabel('EMG H Value')
         axs[int(emg_count / 4), emg_count % 4].set_ylabel('Frequency')
-    plt.savefig('H_matches histogram')
+    plt.savefig('H_matches histogram for ' + str(task) + ' task')
     plt.show()
-
-
-
-
 
     return H_refs, H_matches
 
@@ -129,6 +108,8 @@ def scalar_prod_similarity_normal():
 
     # Find Hs for all the datasets
     H_refs, H_matches = find_all_Hs(datasets)
+    if H_refs == None or H_matches == None:
+        return
 
     # Generate the random matrices
     num_emgs = 8
@@ -193,8 +174,8 @@ def scalar_prod_similarity_normal():
     if rank < len(syn_pairs_same_participant_and_task):
         syn_pairs_same_participant_and_task = syn_pairs_same_participant_and_task[-rank:]
     print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
-    percent_same_participant_and_task = ((len(syn_pairs_same_participant_and_task) / len(participant_synergy_pairs)) * 100) if len(participant_synergy_pairs) != 0 else 'nan'
-    print("percent_same_participant_and_task: " + str(percent_same_participant_and_task))
+    #percent_same_participant_and_task = ((len(syn_pairs_same_participant_and_task) / len(participant_synergy_pairs)) * 100) if len(participant_synergy_pairs) != 0 else 'nan'
+    #print("percent_same_participant_and_task: " + str(percent_same_participant_and_task))
 
 
 def scalar_prod_similarity_truncnorm():
@@ -202,6 +183,8 @@ def scalar_prod_similarity_truncnorm():
 
     # Find Hs for all the datasets
     H_refs, H_matches = find_all_Hs(datasets)
+    if H_refs == None or H_matches == None:
+        return
 
     # Generate the random matrices
     num_emgs = 8
@@ -276,8 +259,8 @@ def scalar_prod_similarity_truncnorm():
     if rank < len(syn_pairs_same_participant_and_task):
         syn_pairs_same_participant_and_task = syn_pairs_same_participant_and_task[-rank:]
     print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
-    percent_same_participant_and_task = ((len(syn_pairs_same_participant_and_task) / len(participant_synergy_pairs)) * 100) if len(participant_synergy_pairs) != 0 else 'nan'
-    print("percent_same_participant_and_task: " + str(percent_same_participant_and_task))
+    #percent_same_participant_and_task = ((len(syn_pairs_same_participant_and_task) / len(participant_synergy_pairs)) * 100) if len(participant_synergy_pairs) != 0 else 'nan'
+    #print("percent_same_participant_and_task: " + str(percent_same_participant_and_task))
 
 def scalar_prod_similarity_uniform():
     datasets = np.array(['../data/referenceData_121120.csv', '../data/matchData_121120.csv'])
@@ -286,6 +269,8 @@ def scalar_prod_similarity_uniform():
     H_refs, H_matches = find_all_Hs(datasets)
     print("H_refs: " + str(H_refs))
     print("H_matches: " + str(H_matches))
+    if H_refs == None or H_matches == None:
+        return
 
     plt.rcParams["figure.figsize"] = (8, 6)
     fig, axs = plt.subplots(2, 2)
@@ -409,9 +394,9 @@ def scalar_prod_similarity_uniform():
     if rank < len(syn_pairs_same_participant_and_task):
         syn_pairs_same_participant_and_task = syn_pairs_same_participant_and_task[-rank:]
     print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
-    print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
-    percent_same_participant_and_task = ((len(syn_pairs_same_participant_and_task) / len(participant_synergy_pairs)) * 100) if len(participant_synergy_pairs) != 0 else 'nan'
-    print("percent_same_participant_and_task: " + str(percent_same_participant_and_task))
+    #print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
+    #percent_same_participant_and_task = ((len(syn_pairs_same_participant_and_task) / len(participant_synergy_pairs)) * 100) if len(participant_synergy_pairs) != 0 else 'nan'
+    #print("percent_same_participant_and_task: " + str(percent_same_participant_and_task))
 
 
 if __name__ == "__main__":
