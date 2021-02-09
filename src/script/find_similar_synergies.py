@@ -14,17 +14,19 @@ from scipy.stats import truncnorm, norm
 from sklearn.preprocessing import normalize
 
 # Input: An 1D array of CSV files containing a reference data CSV and a matching data CSV
-# Returns: H_refs and H_matches, each of which is a dictionary where the key is the tuple (participant, task) and the value is the optimal H
+# Returns: H_refs and H_matches, each of which is a dictionary where the key is the tuple (participant, task) and the value is the optimal H, as well as W_ref and W_match
 def find_all_Hs(data):
     H_refs = {}
     H_matches = {}
+    W_ref = []
+    W_match = []
     for mat in data:
         match_df = pd.read_csv(mat)
         #all_participants = ['c02', 'c04', 'c05', 'c07', 'c08', 'c09', 'c10'] # omitted c06 for now
         #all_tasks = ['10%', '30%', '50%']
         # Group by task
         all_participants = ['c02']
-        all_tasks = ['30%']
+        all_tasks = ['50%']
         for participant in all_participants:
             for task in all_tasks:
                 load_data = match_df.loc[(match_df['Task'] == task) & (match_df['Su'] != 'c06')]
@@ -76,12 +78,14 @@ def find_all_Hs(data):
                     print("H: " + str(H_best))
                     print("EMG mean weights: " + str(np.mean(W_best, axis=0)))
                     H_refs[(participant, task)] = H_best
+                    W_ref = W_best
                     #x=0
                 elif 'match' in mat:
                     print("Match")
                     print("H: " + str(H_best))
                     print("EMG mean weights: " + str(np.mean(W_best, axis=0)))
                     H_matches[(participant, task)] = H_best
+                    W_match = W_best
 
 
     # Plot histogram of H_matches[0]
@@ -100,14 +104,16 @@ def find_all_Hs(data):
     plt.savefig('H_matches histogram for ' + str(task) + ' task')
     plt.show()
 
-    return H_refs, H_matches
+    return H_refs, H_matches, W_ref, W_match
 
 
 def scalar_prod_similarity_normal():
     datasets = np.array(['../data/referenceData_121120.csv', '../data/matchData_121120.csv'])
 
     # Find Hs for all the datasets
-    H_refs, H_matches = find_all_Hs(datasets)
+    H_refs, H_matches, W_ref, W_match = find_all_Hs(datasets)
+    H_refs[0] = normalize(list(H_refs.values())[0], norm='l1')
+    H_matches[0] = normalize(list(H_matches.values())[0], norm='l1')
     if H_refs == None or H_matches == None:
         return
 
@@ -154,7 +160,8 @@ def scalar_prod_similarity_normal():
         for hmatch in H_matches.keys():
             for i in range(0, H_refs[href].shape[0]):
                 for j in range(0, H_matches[hmatch].shape[0]):
-                    scalar_prods[(href, i, hmatch, j)] = np.dot(H_refs[href][i,:], H_matches[hmatch][j,:])
+                    #scalar_prods[(href, i, hmatch, j)] = np.dot(H_refs[href][i,:], H_matches[hmatch][j,:])
+                    scalar_prods[("H_ref", i, "H_match", j)] = np.dot(H_refs[href][i, :], H_matches[hmatch][j, :])
 
     # Add scalar products of H_ref_rand and H_match_rand to the dictionary
     # key is of form ("H_ref_rand", H_ref row, "H_match_rand", H_match row)
@@ -239,7 +246,8 @@ def scalar_prod_similarity_truncnorm():
         for hmatch in H_matches.keys():
             for i in range(0, H_refs[href].shape[0]):
                 for j in range(0, H_matches[hmatch].shape[0]):
-                    scalar_prods[(href, i, hmatch, j)] = np.dot(H_refs[href][i,:], H_matches[hmatch][j,:])
+                    #scalar_prods[(href, i, hmatch, j)] = np.dot(H_refs[href][i,:], H_matches[hmatch][j,:])
+                    scalar_prods[("H_ref", i, "H_match", j)] = np.dot(H_refs[href][i, :], H_matches[hmatch][j, :])
 
     # Add scalar products of H_ref_rand and H_match_rand to the dictionary
     # key is of form ("H_ref_rand", H_ref row, "H_match_rand", H_match row)
@@ -266,7 +274,7 @@ def scalar_prod_similarity_uniform():
     datasets = np.array(['../data/referenceData_121120.csv', '../data/matchData_121120.csv'])
 
     # Find Hs for all the datasets
-    H_refs, H_matches = find_all_Hs(datasets)
+    H_refs, H_matches, W_ref, W_match = find_all_Hs(datasets)
     print("H_refs: " + str(H_refs))
     print("H_matches: " + str(H_matches))
     if H_refs == None or H_matches == None:
@@ -274,15 +282,22 @@ def scalar_prod_similarity_uniform():
 
     plt.rcParams["figure.figsize"] = (8, 6)
     fig, axs = plt.subplots(2, 2)
+    """
     x_axis_names = ['Bicep', 'Tricep lateral',
                     'Anterior deltoid', 'Medial deltoid',
                     'Posterior deltoid', 'Pectoralis major',
                     'Lower trapezius', 'Middle trapezius']
+    """
+    x_axis_names = ['Bicep', 'Tri. lat.',
+                    'Ant. delt.', 'Med. delt.',
+                    'Post. delt.', 'Pect. major',
+                    'Lower trap.', 'Mid. trap.']
     x = np.arange(0,8)
     H_matches_values = list(H_matches.values())
     for syn in range(0, H_matches_values[0].shape[0]):
         axs[int(syn/2), syn % 2].bar(x, H_matches_values[0][syn,:])
-        axs[int(syn/2), syn % 2].set_xticklabels(x_axis_names, rotation=15)
+        axs[int(syn/2), syn % 2].set_xticks(np.arange(0,8))
+        axs[int(syn/2), syn % 2].set_xticklabels(x_axis_names, rotation=45)
         axs[int(syn/2), syn % 2].set_title('Row ' + str(syn))
         axs[int(syn/2), syn % 2].set_xlabel('EMG')
         axs[int(syn/2), syn % 2].set_ylabel('H Value')
@@ -297,7 +312,8 @@ def scalar_prod_similarity_uniform():
     H_refs_values = list(H_refs.values())
     for syn in range(0, H_refs_values[0].shape[0]):
         axs[int(syn / 2), syn % 2].bar(x, H_refs_values[0][syn, :])
-        axs[int(syn / 2), syn % 2].set_xticklabels(x_axis_names, rotation=15)
+        axs[int(syn / 2), syn % 2].set_xticks(np.arange(0, 8))
+        axs[int(syn / 2), syn % 2].set_xticklabels(x_axis_names, rotation=45)
         axs[int(syn / 2), syn % 2].set_title('Row ' + str(syn))
         axs[int(syn / 2), syn % 2].set_xlabel('EMG')
         axs[int(syn / 2), syn % 2].set_ylabel('H Value')
@@ -374,7 +390,8 @@ def scalar_prod_similarity_uniform():
         for hmatch in H_matches.keys():
             for i in range(0, H_refs[href].shape[0]):
                 for j in range(0, H_matches[hmatch].shape[0]):
-                    scalar_prods[(href, i, hmatch, j)] = np.dot(H_refs[href][i,:], H_matches[hmatch][j,:])
+                    #scalar_prods[(href, i, hmatch, j)] = np.dot(H_refs[href][i, :], H_matches[hmatch][j, :])
+                    scalar_prods[("H_ref", i, "H_match", j)] = np.dot(H_refs[href][i,:], H_matches[hmatch][j,:])
 
     # Add scalar products of H_ref_rand and H_match_rand to the dictionary
     # key is of form ("H_ref_rand", H_ref row, "H_match_rand", H_match row)
@@ -388,12 +405,25 @@ def scalar_prod_similarity_uniform():
     keys_percentile95_and_above = list(sorted_scalar_prods)[percentile95_index:]
     participant_synergy_pairs = [pair for pair in keys_percentile95_and_above if pair[0][0] != "H_ref_rand"] # participant data, not random data
     print("participant_synergy_pairs: " + str(participant_synergy_pairs))
-    syn_pairs_same_participant_and_task = [pair for pair in participant_synergy_pairs if pair[0][0] == pair[0][2]] # if both correspond to same participant and same task
+    #syn_pairs_same_participant_and_task = [pair for pair in participant_synergy_pairs if pair[0][0] == pair[0][2]] # if both correspond to same participant and same task
     # choose rank number of synergy pairs with the highest scalar product if the syn_pairs_same_participant_and_task >= rank
     rank = np.shape(H_matches_concat)[0]
-    if rank < len(syn_pairs_same_participant_and_task):
-        syn_pairs_same_participant_and_task = syn_pairs_same_participant_and_task[-rank:]
-    print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
+
+    matches_dict = {} # key: H_ref row. value: (H_match row, scalar product)
+    for i in range(0,rank):
+        matches_dict[i] = [(pair[0][3], pair[1]) for pair in participant_synergy_pairs if pair[0][1] == i][-1] # pick the match for a given row that appears last since it's in the highest percentile
+        if matches_dict[i] == None:
+            print("Match for row " + str(i) + ": " + "None")
+        else:
+            match_for_i = matches_dict[i][0]
+            W_ref_means = np.mean(W_ref, axis=0)
+            W_match_means = np.mean(W_match, axis=0)
+            print("Match for row " + str(i) + ": " + str(match_for_i) + ", with H_ref: " + str(list(H_refs.values())[0][i,:]) + ", W_ref: " + str(W_ref_means[i]) + ", H_match: " + str(list(H_matches.values())[0][match_for_i,:]) + ", W_match: " + str(W_match_means[match_for_i]) + ", and scalar product: " + str(matches_dict[i][1]))
+
+
+    #if rank < len(syn_pairs_same_participant_and_task):
+    #    syn_pairs_same_participant_and_task = syn_pairs_same_participant_and_task[-rank:]
+    #print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
     #print("syn_pairs_same_participant_and_task: " + str(syn_pairs_same_participant_and_task))
     #percent_same_participant_and_task = ((len(syn_pairs_same_participant_and_task) / len(participant_synergy_pairs)) * 100) if len(participant_synergy_pairs) != 0 else 'nan'
     #print("percent_same_participant_and_task: " + str(percent_same_participant_and_task))
