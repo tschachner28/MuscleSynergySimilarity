@@ -26,7 +26,7 @@ def find_all_Hs(data):
         #all_tasks = ['10%', '30%', '50%']
         # Group by task
         #all_participants = ['c02']
-        all_tasks = ['10%']
+        all_tasks = ['50%']
         for task in all_tasks:
             load_data = match_df.loc[(match_df['Task'] == task) & (match_df['Su'] != 'c06')]
             load_emg = load_data.loc[:, 'Bicep':'MidTrap'].values
@@ -337,7 +337,7 @@ def scalar_prod_similarity_uniform():
     H_ref_rand = normalize(H_ref_rand, norm='l1')
 
     #H_matches_concat = np.concatenate(list(H_matches.values()))  # concatenate all H_refs into one matrix, then find their mean and stdev
-    print("rows in H_matches_concat: " + str(np.shape(H_match)[0]))
+    print("rank: " + str(np.shape(H_match)[0]))
     H_matches_emg_means = np.mean(H_match, axis=0)
     H_matches_emg_stdevs = np.std(H_match, axis=0)
     H_matches_emg_mins = np.min(H_match, axis=0)
@@ -406,6 +406,7 @@ def scalar_prod_similarity_uniform():
     # choose rank number of synergy pairs with the highest scalar product if the syn_pairs_same_participant_and_task >= rank
     rank = np.shape(H_match)[0]
 
+    """
     matches_dict = {} # key: H_ref row. value: (H_match row, scalar product)
     for i in range(0,rank):
         matches_dict[i] = [(pair[0][3], pair[1]) for pair in participant_synergy_pairs if pair[0][1] == i][-1] # pick the match for a given row that appears last since it's in the highest percentile
@@ -416,6 +417,23 @@ def scalar_prod_similarity_uniform():
             W_ref_means = np.mean(W_ref, axis=0)
             W_match_means = np.mean(W_match, axis=0)
             print("Match for row " + str(i) + ": " + str(match_for_i) + ", with H_ref: " + str(H_ref[i,:]) + ", W_ref: " + str(W_ref_means[i]) + ", H_match: " + str(H_match[match_for_i,:]) + ", W_match: " + str(W_match_means[match_for_i]) + ", and scalar product: " + str(matches_dict[i][1]))
+    print("All synergy pairs: " + str(participant_synergy_pairs))
+    """
+    matches_dict = {} # key: H_ref row. value: H_match row
+    H_refs_rows_matched = []
+    H_matches_rows_matched = []
+    W_ref_means = np.mean(W_ref, axis=0)
+    W_match_means = np.mean(W_match, axis=0)
+    for i in range(0, len(participant_synergy_pairs)): # iterate from last element (highest scalar product) to first element (lowest scalar product)
+        current_H_ref_row = participant_synergy_pairs[len(participant_synergy_pairs) - 1 - i][0][1]
+        current_H_match_row = participant_synergy_pairs[len(participant_synergy_pairs) - 1 - i][0][3]
+        current_scalar_prod = participant_synergy_pairs[len(participant_synergy_pairs) - 1 - i][1]
+        if current_H_ref_row not in H_refs_rows_matched and current_H_match_row not in H_matches_rows_matched:
+            H_refs_rows_matched.append(current_H_ref_row)
+            H_matches_rows_matched.append(current_H_match_row)
+            matches_dict[current_H_ref_row] = current_H_match_row
+            print("Match for H_ref row " + str(current_H_ref_row) + ": H_match row " + str(current_H_match_row) + ", with H_ref: " + str(np.round(H_ref[current_H_ref_row,:], 3)) + ", W_ref: " + str(np.round(W_ref_means[current_H_ref_row], 3)) + ", H_match: " + str(np.round(H_match[current_H_match_row,:], 3)) + ", W_match: " + str(np.round(W_match_means[current_H_match_row], 3)) + ", and scalar product: " + str(np.round(current_scalar_prod, 3)))
+
 
 
     #if rank < len(syn_pairs_same_participant_and_task):
