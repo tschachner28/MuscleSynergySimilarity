@@ -107,7 +107,7 @@ def find_2_task_Hs(mat, task1, task2):
 
 # Input: An 1D array of CSV files containing a reference data CSV and a matching data CSV
 # Returns: H_refs, H_matches, W_ref, W_match
-def find_ref_match_Hs(data):
+def find_ref_match_Hs(data, task):
     H_ref = []
     H_match = []
     W_ref = []
@@ -118,65 +118,65 @@ def find_ref_match_Hs(data):
         #all_tasks = ['10%', '30%', '50%']
         # Group by task
         #all_participants = ['c02']
-        all_tasks = ['10%']
-        for task in all_tasks:
-            load_data = match_df.loc[(match_df['Task'] == task) & (match_df['Su'] != 'c06')]
-            load_emg = load_data.loc[:, 'Bicep':'MidTrap'].values
+        #all_tasks = ['10%']
+        #for task in all_tasks:
+        load_data = match_df.loc[(match_df['Task'] == task) & (match_df['Su'] != 'c06')]
+        load_emg = load_data.loc[:, 'Bicep':'MidTrap'].values
 
-            curr_mean = 0
-            VAF_best = 0
-            H_best = 0
-            gmeans_all_ranks = np.zeros([1,3])
-            lmeans_all_ranks = np.zeros([3,8])
-            Hs_all_ranks = []
-            W_best = 0
-            rank_chosen = 0
-            for rank in range(2, 5):
-                g_mean, l_mean, VAF_m, H_m, W_m = rank_determine_helper(100, load_emg, rank)
-                gmeans_all_ranks[0,rank-2] = g_mean
-                lmeans_all_ranks[rank-2,:] = l_mean
-                Hs_all_ranks.append(H_m)
-                if np.any(l_mean < 80) or g_mean < 90:
-                    continue
-                elif g_mean - curr_mean >= 3:
-                    curr_mean = g_mean
-                    VAF_best = VAF_m
-                    H_best = H_m
-                    W_best = W_m
-                    rank_chosen = rank
-                else:
-                    continue
+        curr_mean = 0
+        VAF_best = 0
+        H_best = 0
+        gmeans_all_ranks = np.zeros([1,3])
+        lmeans_all_ranks = np.zeros([3,8])
+        Hs_all_ranks = []
+        W_best = 0
+        rank_chosen = 0
+        for rank in range(2, 5):
+            g_mean, l_mean, VAF_m, H_m, W_m = rank_determine_helper(100, load_emg, rank)
+            gmeans_all_ranks[0,rank-2] = g_mean
+            lmeans_all_ranks[rank-2,:] = l_mean
+            Hs_all_ranks.append(H_m)
+            if np.any(l_mean < 80) or g_mean < 90:
+                continue
+            elif g_mean - curr_mean >= 3:
+                curr_mean = g_mean
+                VAF_best = VAF_m
+                H_best = H_m
+                W_best = W_m
+                rank_chosen = rank
+            else:
+                continue
 
-            # If none of the ranks have g_mean > 90 and np.all(l_mean) > 80)
-            if type(H_best) == int: # still same as its initialized value --> no optimal H has been found yet
-                print("entered second round selection")
-                if np.any(np.all(lmeans_all_ranks > 80, axis=1)): # if any row/rank has all l_means > 80, pick that one
-                    rank_chosen = np.where(np.all(lmeans_all_ranks > 80, axis=1))[0][0] + 2 # lowest rank/row where all l_means > 80
-                    H_best = Hs_all_ranks[np.where(np.all(lmeans_all_ranks > 80, axis=1))[0][0]]
-                elif np.any(gmeans_all_ranks > 90):
-                    rank_chosen = np.where(gmeans_all_ranks > 90)[0][0] + 2 # else, pick lowest rank with g_mean > 90
-                    H_best = Hs_all_ranks[np.where(gmeans_all_ranks > 90)[0][0]]
-                else:
-                    H_best = []
-                    print("No H satisfies the criteria.")
-                    continue
+        # If none of the ranks have g_mean > 90 and np.all(l_mean) > 80)
+        if type(H_best) == int: # still same as its initialized value --> no optimal H has been found yet
+            print("entered second round selection")
+            if np.any(np.all(lmeans_all_ranks > 80, axis=1)): # if any row/rank has all l_means > 80, pick that one
+                rank_chosen = np.where(np.all(lmeans_all_ranks > 80, axis=1))[0][0] + 2 # lowest rank/row where all l_means > 80
+                H_best = Hs_all_ranks[np.where(np.all(lmeans_all_ranks > 80, axis=1))[0][0]]
+            elif np.any(gmeans_all_ranks > 90):
+                rank_chosen = np.where(gmeans_all_ranks > 90)[0][0] + 2 # else, pick lowest rank with g_mean > 90
+                H_best = Hs_all_ranks[np.where(gmeans_all_ranks > 90)[0][0]]
+            else:
+                H_best = []
+                print("No H satisfies the criteria.")
+                continue
 
 
-            print('best number of synergy chosen is: ', rank_chosen)
-            print('H_best is:\n', H_best)
-            if 'reference' in mat:
-                print("Reference")
-                print("H: " + str(H_best))
-                print("EMG mean weights: " + str(np.mean(W_best, axis=0)))
-                H_ref = H_best
-                W_ref = W_best
-                #x=0
-            elif 'match' in mat:
-                print("Match")
-                print("H: " + str(H_best))
-                print("EMG mean weights: " + str(np.mean(W_best, axis=0)))
-                H_match = H_best
-                W_match = W_best
+        print('best number of synergy chosen is: ', rank_chosen)
+        print('H_best is:\n', H_best)
+        if 'reference' in mat:
+            print("Reference")
+            print("H: " + str(H_best))
+            print("EMG mean weights: " + str(np.mean(W_best, axis=0)))
+            H_ref = H_best
+            W_ref = W_best
+            #x=0
+        elif 'match' in mat:
+            print("Match")
+            print("H: " + str(H_best))
+            print("EMG mean weights: " + str(np.mean(W_best, axis=0)))
+            H_match = H_best
+            W_match = W_best
 
 
     # Plot histogram of H_matches[0]
@@ -287,7 +287,7 @@ def get_rand_Hs_uniform(H_ref, H_match):
     num_emgs = 8
     # H_refs_concat= np.concatenate(list(H_refs.values())) # concatenate all H_refs into one matrix, then find their mean and stdev
     H_refs_emg_means = np.mean(H_ref, axis=0)
-    # H_refs_emg_stdevs = np.std(H_refs_concat, axis=0)
+    H_refs_emg_stdevs = np.std(H_ref, axis=0)
     H_refs_emg_mins = np.min(H_ref, axis=0)
     H_refs_emg_maxes = np.max(H_ref, axis=0)
 
@@ -297,14 +297,35 @@ def get_rand_Hs_uniform(H_ref, H_match):
         H_ref_rand[:, emg_count] = np.random.uniform(lower_bound, H_refs_emg_maxes[emg_count] + 0.2, 1000)
     H_ref_rand = normalize(H_ref_rand, norm='l1')
 
+    emg_names = ['Bicep', 'Tricep lateral',
+                 'Anterior deltoid', 'Medial deltoid',
+                 'Posterior deltoid', 'Pectoralis major',
+                 'Lower trapezius', 'Middle trapezius']
+
+    # Plot the histogram of the H_ref_rand values
+    plt.rcParams["figure.figsize"] = (8, 6)
+    fig, axs = plt.subplots(2, 4)
+    for emg_count in range(0, num_emgs):
+        axs[int(emg_count / 4), emg_count % 4].hist(H_ref_rand[:, emg_count], list(np.array(np.arange(0, 1, 0.01))))
+        #title_str = 'μ≈' + str(round(H_refs_emg_means[emg_count], 2)) + ', σ≈' + str(
+        #    round(H_refs_emg_stdevs[emg_count], 2))
+        title_str = emg_names[emg_count]
+        axs[int(emg_count / 4), emg_count % 4].set_title(title_str)
+        axs[int(emg_count / 4), emg_count % 4].set_xlabel('EMG H Value')
+        axs[int(emg_count / 4), emg_count % 4].set_ylabel('Frequency')
+    plt.tight_layout()
+    #plt.title('H_ref_rand histogram (uniform distrib)')
+    plt.savefig('H_ref_rand histogram (uniform distrib)')
+    plt.show()
+
     # H_matches_concat = np.concatenate(list(H_matches.values()))  # concatenate all H_refs into one matrix, then find their mean and stdev
-    print("rank: " + str(np.shape(H_match)[0]))
+    print("H_match rank: " + str(np.shape(H_match)[0]))
     H_matches_emg_means = np.mean(H_match, axis=0)
     H_matches_emg_stdevs = np.std(H_match, axis=0)
     H_matches_emg_mins = np.min(H_match, axis=0)
     H_matches_emg_maxes = np.max(H_match, axis=0)
-    H_matches_rand = np.zeros([1000, 8])
 
+    H_matches_rand = np.zeros([1000, 8])
     plt.rcParams["figure.figsize"] = (8, 6)
     fig, axs = plt.subplots(2, 4)
     for emg_count in range(0, num_emgs):
@@ -312,15 +333,19 @@ def get_rand_Hs_uniform(H_ref, H_match):
         H_matches_rand[:, emg_count] = np.random.uniform(lower_bound, H_matches_emg_maxes[emg_count] + 0.2, 1000)
     H_matches_rand = normalize(H_matches_rand, norm='l1')  # Normalize the random values
 
-    # Plot the histogram of the random values
+
+
+    # Plot the histogram of the H_matches_rand values
     for emg_count in range(0, num_emgs):
         axs[int(emg_count / 4), emg_count % 4].hist(H_matches_rand[:, emg_count], list(np.array(np.arange(0, 1, 0.01))))
-        title_str = 'μ≈' + str(round(H_matches_emg_means[emg_count], 2)) + ', σ≈' + str(
-            round(H_matches_emg_stdevs[emg_count], 2))
+        #title_str = 'μ≈' + str(round(H_matches_emg_means[emg_count], 2)) + ', σ≈' + str(
+        #    round(H_matches_emg_stdevs[emg_count], 2))
+        title_str = emg_names[emg_count]
         axs[int(emg_count / 4), emg_count % 4].set_title(title_str)
         axs[int(emg_count / 4), emg_count % 4].set_xlabel('EMG H Value')
         axs[int(emg_count / 4), emg_count % 4].set_ylabel('Frequency')
-
+    plt.tight_layout()
+    #plt.title('H_matches_rand histogram (uniform distrib)')
     plt.savefig('H_matches_rand histogram (uniform distrib)')
     plt.show()
 
@@ -328,25 +353,31 @@ def get_rand_Hs_uniform(H_ref, H_match):
     # plt.figure()
     fig = plt.figure(figsize=(10, 5))
     # ax1 = f1.add_subplot(111)
+    """
     x_axis_labels = ['Bicep', 'Tricep lateral',
                      'Anterior deltoid', 'Medial deltoid',
                      'Posterior deltoid', 'Pectoralis major',
                      'Lower trapezius', 'Middle trapezius']
+    """
+    x_axis_labels = ['Bicep', 'Tri. lat.',
+                    'Ant. delt.', 'Med. delt.',
+                    'Post. delt.', 'Pect. major',
+                    'Lower trap.', 'Mid. trap.']
     x = np.arange(0, 8)
     plt.bar(x, H_matches_rand[500, :])
     plt.xlabel('Muscle')
     plt.ylabel('H Value')
-    plt.xticks(x, x_axis_labels)
-    plt.title('H_matches_rand Row 500')
-    plt.savefig('H_matches_rand Row 500')
+    plt.xticks(x, x_axis_labels, rotation=30)
+    plt.title('H_matches_rand Synergy (Row) 500')
+    plt.savefig('H_matches_rand Synergy (Row) 500')
     plt.show()
     return H_ref_rand, H_matches_rand
 
-def scalar_prod_similarity_ref_match_phases():
+def scalar_prod_similarity_ref_match_phases(task):
     datasets = np.array(['../data/referenceData_121120.csv', '../data/matchData_121120.csv'])
 
     # Find Hs for all the datasets
-    H_ref, H_match, W_ref, W_match = find_ref_match_Hs(datasets)
+    H_ref, H_match, W_ref, W_match = find_ref_match_Hs(datasets, task)
     H_ref = normalize(H_ref, norm='l1')
     H_match = normalize(H_match, norm='l1')
     print("H_ref: " + str(np.round(H_ref, 3)))
@@ -354,25 +385,22 @@ def scalar_prod_similarity_ref_match_phases():
     if type(H_ref) == list or type(H_match) == list: # still [], the initialized value
         return
 
-    plt.rcParams["figure.figsize"] = (8, 6)
-    fig, axs = plt.subplots(2, 2)
-    """
-    x_axis_names = ['Bicep', 'Tricep lateral',
-                    'Anterior deltoid', 'Medial deltoid',
-                    'Posterior deltoid', 'Pectoralis major',
-                    'Lower trapezius', 'Middle trapezius']
-    """
+    plt.rcParams["figure.figsize"] = (12, 8)
+    fig, axs = plt.subplots(2, 4)
+
+
     x_axis_names = ['Bicep', 'Tri. lat.',
                     'Ant. delt.', 'Med. delt.',
                     'Post. delt.', 'Pect. major',
                     'Lower trap.', 'Mid. trap.']
     x = np.arange(0,8)
+    """
     #H_matches_values = list(H_matches.values())
     for syn in range(0, H_match.shape[0]):
         axs[int(syn/2), syn % 2].bar(x, H_match[syn,:])
         axs[int(syn/2), syn % 2].set_xticks(np.arange(0,8))
         axs[int(syn/2), syn % 2].set_xticklabels(x_axis_names, rotation=45)
-        axs[int(syn/2), syn % 2].set_title('Row ' + str(syn))
+        axs[int(syn/2), syn % 2].set_title('Synergy (Row) ' + str(syn))
         axs[int(syn/2), syn % 2].set_xlabel('EMG')
         axs[int(syn/2), syn % 2].set_ylabel('H Value')
     #plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
@@ -388,14 +416,38 @@ def scalar_prod_similarity_ref_match_phases():
         axs[int(syn / 2), syn % 2].bar(x, H_ref[syn, :])
         axs[int(syn / 2), syn % 2].set_xticks(np.arange(0, 8))
         axs[int(syn / 2), syn % 2].set_xticklabels(x_axis_names, rotation=45)
-        axs[int(syn / 2), syn % 2].set_title('Row ' + str(syn))
+        axs[int(syn / 2), syn % 2].set_title('Synergy (Row) ' + str(syn))
         axs[int(syn / 2), syn % 2].set_xlabel('EMG')
         axs[int(syn / 2), syn % 2].set_ylabel('H Value')
     # plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
     plt.tight_layout()
     plt.savefig('H_ref for uniform distribution')
     plt.show()
+    """
 
+    # Row 1: H_ref. Row 2: H_match
+    for syn in range(0, H_ref.shape[0]):
+        axs[0, syn].bar(x, H_ref[syn, :])
+        axs[0, syn].set_xticks(np.arange(0, 8))
+        axs[0, syn].set_xticklabels(x_axis_names, rotation=30)
+        axs[0, syn].set_title('Synergy (Row) ' + str(syn) + ' (Ref. Phase)')
+        # axs[0, syn].set_xlabel('EMG')
+        axs[0, syn].set_ylabel('H Value')
+        axs[0, syn].set_ylim([0, 0.55])
+        # plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
+
+    for syn in range(0, H_match.shape[0]):
+        axs[1, syn].bar(x, H_match[syn, :], color='orange')
+        axs[1, syn].set_xticks(np.arange(0, 8))
+        axs[1, syn].set_xticklabels(x_axis_names, rotation=30)
+        axs[1, syn].set_title('Synergy (Row) ' + str(syn) + ' (Match Phase)')
+        # axs[1, syn].set_xlabel('EMG')
+        axs[1, syn].set_ylabel('H Value')
+        axs[1, syn].set_ylim([0, 0.55])
+        # plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
+    plt.tight_layout()
+    plt.savefig('Ref and Match Hs for ' + task + ' Task')
+    plt.show()
 
     # Calculate scalar products and store them in the dictionary scalar_prods
     # key is tuple of format (href, href row, hmatch, hmatch row)
@@ -455,6 +507,18 @@ def scalar_prod_similarity_ref_match_phases():
             matches_dict[current_H_ref_row] = current_H_match_row
             print("Match for H_ref row " + str(current_H_ref_row) + ": H_match row " + str(current_H_match_row) + ", with H_ref: " + str(np.round(H_ref[current_H_ref_row,:], 3)) + ", W_ref: " + str(np.round(W_ref_means[current_H_ref_row], 3)) + ", H_match: " + str(np.round(H_match[current_H_match_row,:], 3)) + ", W_match: " + str(np.round(W_match_means[current_H_match_row], 3)) + ", and scalar product: " + str(np.round(current_scalar_prod, 3)))
 
+    # Plot the sorted scalar products
+    print("len(sorted_scalar_prods: " + str(len(sorted_scalar_prods)))
+    #plt.plot((np.arange(0, len(sorted_scalar_prods)) / len(sorted_scalar_prods)) * 100, [prod[1] for prod in sorted_scalar_prods])
+    n, bins, patches = plt.hist([prod[1] for prod in sorted_scalar_prods], bins=1000)
+    vline_loc = sorted_scalar_prods[percentile95_index][1]
+    plt.axvline(x=vline_loc, color='r')
+    #plt.xlabel('Percentile')
+    #plt.ylabel('Scalar Product Magnitude')
+    plt.xlabel('Scalar Product Magnitude')
+    plt.ylabel('Frequency')
+    plt.title('Sorted Scalar Products (Ref and Match Phases)')
+    plt.savefig('Sorted Scalar Products (Ref and Match Phases)')
 
     #if rank < len(syn_pairs_same_participant_and_task):
     #    syn_pairs_same_participant_and_task = syn_pairs_same_participant_and_task[-rank:]
@@ -487,6 +551,7 @@ def scalar_prod_similarity_across_tasks(task1, task2, ref_or_match):
     if type(H_task1) == list or type(H_task2) == list: # still [], the initialized value
         return
 
+    """
     plt.rcParams["figure.figsize"] = (8, 6)
     fig, axs = plt.subplots(2, 2)
 
@@ -500,12 +565,12 @@ def scalar_prod_similarity_across_tasks(task1, task2, ref_or_match):
         axs[int(syn/2), syn % 2].bar(x, H_task2[syn,:])
         axs[int(syn/2), syn % 2].set_xticks(np.arange(0,8))
         axs[int(syn/2), syn % 2].set_xticklabels(x_axis_names, rotation=45)
-        axs[int(syn/2), syn % 2].set_title('Row ' + str(syn))
+        axs[int(syn/2), syn % 2].set_title('Synergy (Row) ' + str(syn))
         axs[int(syn/2), syn % 2].set_xlabel('EMG')
         axs[int(syn/2), syn % 2].set_ylabel('H Value')
     #plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
     plt.tight_layout()
-    plt.savefig('H for' + task2 + ' with uniform distribution')
+    plt.savefig('H for ' + task2 + ' ' + ref_or_match + ' with uniform distribution')
     plt.show()
 
     plt.rcParams["figure.figsize"] = (8, 6)
@@ -516,14 +581,49 @@ def scalar_prod_similarity_across_tasks(task1, task2, ref_or_match):
         axs[int(syn / 2), syn % 2].bar(x, H_task1[syn, :])
         axs[int(syn / 2), syn % 2].set_xticks(np.arange(0, 8))
         axs[int(syn / 2), syn % 2].set_xticklabels(x_axis_names, rotation=45)
-        axs[int(syn / 2), syn % 2].set_title('Row ' + str(syn))
+        axs[int(syn / 2), syn % 2].set_title('Synergy (Row) ' + str(syn))
         axs[int(syn / 2), syn % 2].set_xlabel('EMG')
         axs[int(syn / 2), syn % 2].set_ylabel('H Value')
     # plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
     plt.tight_layout()
-    plt.savefig('H for' + task1 + ' with uniform distribution')
+    plt.savefig('H for ' + task1 + ' ' + ref_or_match + ' with uniform distribution')
     plt.show()
+    """
 
+    plt.rcParams["figure.figsize"] = (12, 8)
+    fig, axs = plt.subplots(2, 4)
+    x_axis_names = ['Bicep', 'Tri. lat.',
+                    'Ant. delt.', 'Med. delt.',
+                    'Post. delt.', 'Pect. major',
+                    'Lower trap.', 'Mid. trap.']
+    x = np.arange(0, 8)
+
+    # Row 1: task1. Row 2: task2
+    for syn in range(0, H_task1.shape[0]):
+        axs[0, syn].bar(x, H_task1[syn, :])
+        axs[0, syn].set_xticks(np.arange(0, 8))
+        axs[0, syn].set_xticklabels(x_axis_names, rotation=30)
+        axs[0, syn].set_title('Synergy (Row) ' + str(syn) + ' (' + task1 + ' Task)')
+        #axs[0, syn].set_xlabel('EMG')
+        axs[0, syn].set_ylabel('H Value')
+        axs[0, syn].set_ylim([0, 0.55])
+        # plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
+
+
+    for syn in range(0, H_task2.shape[0]):
+        axs[1, syn].bar(x, H_task2[syn, :], color='orange')
+        axs[1, syn].set_xticks(np.arange(0, 8))
+        axs[1, syn].set_xticklabels(x_axis_names, rotation=30)
+        axs[1, syn].set_title('Synergy (Row) ' + str(syn) + ' (' + task2 + ' Task)')
+        #axs[1, syn].set_xlabel('EMG')
+        axs[1, syn].set_ylabel('H Value')
+        axs[1, syn].set_ylim([0, 0.55])
+        # plt.subplots_adjust(bottom=0.1, right=0.1, top=0.9)
+    plt.tight_layout()
+
+
+    plt.savefig('Hs for ' + task1 + ' and ' + task2 + ' in ' + ref_or_match +' phase ')
+    plt.show()
 
     # Calculate scalar products and store them in the dictionary scalar_prods
     # key is tuple of format (href, href row, hmatch, hmatch row)
@@ -581,10 +681,10 @@ def scalar_prod_similarity_across_tasks(task1, task2, ref_or_match):
             H_task1_rows_matched.append(current_H_task1_row)
             H_task2_rows_matched.append(current_H_task2_row)
             matches_dict[current_H_task1_row] = current_H_task2_row
-            print("Match for H_" + task1 + " row " + str(current_H_task1_row) + ": H_" + task2 + " row " + str(current_H_task2_row) + ", with H_" + task1 + ": " + str(np.round(H_task1[current_H_task1_row,:], 3)) + ", W_ref: " + str(np.round(W_task1_means[current_H_task1_row], 3)) + ", H_match: " + str(np.round(H_task2[current_H_task2_row,:], 3)) + ", W_match: " + str(np.round(W_task2_means[current_H_task2_row], 3)) + ", and scalar product: " + str(np.round(current_scalar_prod, 3)))
+            print("Match for H_" + task1 + " row " + str(current_H_task1_row) + ": H_" + task2 + " row " + str(current_H_task2_row) + ", with H_" + task1 + ": " + str(np.round(H_task1[current_H_task1_row,:], 3)) + ", W_ " + task1 + ": " + str(np.round(W_task1_means[current_H_task1_row], 3)) + ", H_" + task2 + ": " + str(np.round(H_task2[current_H_task2_row,:], 3)) + ", W_" + task2 + ": " + str(np.round(W_task2_means[current_H_task2_row], 3)) + ", and scalar product: " + str(np.round(current_scalar_prod, 3)))
 
 if __name__ == "__main__":
-    #scalar_prod_similarity_ref_match_phases()
+    #scalar_prod_similarity_ref_match_phases('50%')
     scalar_prod_similarity_across_tasks('10%', '50%', 'match')
     """
     Most similar: 10% and 30% match, 30% and 50% ref, 30% and 50% match
