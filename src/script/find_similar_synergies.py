@@ -378,7 +378,9 @@ def scalar_prod_similarity_ref_match_phases(task):
 
     # Find Hs for all the datasets
     H_ref, H_match, W_ref, W_match = find_ref_match_Hs(datasets, task)
+    print("H_ref before normalization: " + str(np.round(H_ref,3)))
     H_ref = normalize(H_ref, norm='l1')
+    print("H_ref after normalization: " + str(np.round(H_ref,3)))
     H_match = normalize(H_match, norm='l1')
     print("H_ref: " + str(np.round(H_ref, 3)))
     print("H_match: " + str(np.round(H_match, 3)))
@@ -684,8 +686,8 @@ def scalar_prod_similarity_across_tasks(task1, task2, ref_or_match):
             print("Match for H_" + task1 + " row " + str(current_H_task1_row) + ": H_" + task2 + " row " + str(current_H_task2_row) + ", with H_" + task1 + ": " + str(np.round(H_task1[current_H_task1_row,:], 3)) + ", W_ " + task1 + ": " + str(np.round(W_task1_means[current_H_task1_row], 3)) + ", H_" + task2 + ": " + str(np.round(H_task2[current_H_task2_row,:], 3)) + ", W_" + task2 + ": " + str(np.round(W_task2_means[current_H_task2_row], 3)) + ", and scalar product: " + str(np.round(current_scalar_prod, 3)))
 
 if __name__ == "__main__":
-    #scalar_prod_similarity_ref_match_phases('50%')
-    scalar_prod_similarity_across_tasks('10%', '50%', 'match')
+    scalar_prod_similarity_ref_match_phases('30%')
+    #scalar_prod_similarity_across_tasks('10%', '50%', 'match')
     """
     Most similar: 10% and 30% match, 30% and 50% ref, 30% and 50% match
     Kinda similar: 10% and 50% ref, 10% and 50% match
